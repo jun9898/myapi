@@ -1,12 +1,12 @@
-<!-- <h1> Hello </h1> -->
 <script>
-  let message;
+  import Router from 'svelte-spa-router'
+  import Hoem  from './routes/Home.svelte'
+  import Detail from "./routes/Detail.svelte"
 
-  fetch("http://127.0.0.1:8000/hello").then((response) => {
-    response.json().then((json) => {
-      message = json.message;
-    });
-  });
+  const routes = {
+    '/': Hoem,
+    '/detail/:question_id' : Detail,
+  }
 </script>
 
-<h1>{message}</h1>
+<Router {routes}/>
