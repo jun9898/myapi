@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
+from domain.answer import answer_router
 from domain.question import question_router
 
 app = FastAPI()
@@ -23,3 +24,4 @@ app.add_middleware(
 #     return {"message": "안녕하세요 파이보"}
 
 app.include_router(question_router.router)
+app.include_router(answer_router.router)

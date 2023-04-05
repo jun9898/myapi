@@ -25,3 +25,9 @@ def question_list(db: Session = Depends(get_db)):  #FastAPI의 Depends는 매개
     # _question_list = db.query(Question).order_by(Question.create_date.desc()).all() --------- 이 코드를 crud파일에 작성하여 Read 작업 코드를 간소화 하였습니다.
     _question_list = question_crud.get_question_list(db) # ----------crud에 작성된 get question list 코로 대체하였습니다.
     return _question_list
+
+
+@router.get("/detail/{question_id}", response_model=question_schema.Question)
+def question_detail(question_id: int, db: Session = Depends(get_db)):
+    question = question_crud.get_question(db, question_id=question_id)
+    return question
