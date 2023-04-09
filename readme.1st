@@ -1,0 +1,143 @@
+--------- git clone 후, 작업
+1. anaconda에서 python 3.10 생성. 이름을 py310
+   conda info --envs 에서
+   conda activate py310 
+
+2. virtual env 생성-py310환경
+   별도 폴더에서 venv 생성
+   python -m venv myapi
+
+3. vscode에서 python 인터프리터를 venv/myapi/bin/python 으로 선택
+
+--------- 작업 시작시
+1. frondend에서 svelte 서버 실행
+   npm run dev
+
+2. 프로젝트 root에서 uvicorn 실행
+   uvicorn main:app --reload
+
+--------- file/directory 설명
+main.py 
+    <프로젝트를 설정>
+    main.py 파일에 생성한 app 객체는 FastAPI의 핵심 객체이다. 
+    app 객체를 통해 FastAPI의 설정을 할 수 있다. 
+    main.py는 FastAPI 프로젝트의 전체적인 환경을 설정하는 파일이다.
+
+database.py
+   <데이터베이스를 설정>
+   database.py 파일은 데이터베이스와 관련된 설정을 하는 파일이다. 
+   이 파일에는 데이터베이스를 사용하기 위한 변수, 함수등을 정의하고 접속할 데이터베이스의 주소와 사용자, 비밀번호등을 관리한다.
+
+models.py
+   <모델을 관리>
+   이 프로젝트는 ORM(object relational mapping)을 지원하는 파이썬 데이터베이스 도구인 SQLAlchemy를 사용한다. 
+   SQLAlchemy는 모델 기반으로 데이터베이스를 처리한다. 
+   "모델 클래스들의 정의" -> models.py 파일이다
+
+domain 디렉터리
+   <API를 구성하는 디렉토리)
+   도메인은 "질문", "답변", "사용자" 처럼 굵직한 요구사항 또는 문제 영역을 대표하는 말이다.
+   이 프로젝트에서는 question, answer, user 3개의 도메인이 있다.
+
+   각 도메인은 API를 생성하기 위해서 다음과 같은 파일들이 필요하다.
+   * domain/xxx/xxx_router.py     -> URL과 API의 전체적인 동작을 관리
+   * domain/xxx/xxx_crud.py       -> 데이터베이스 처리 파일 - 데이터의 생성(Create), 조회(Read), 수정(Update), 삭제(Delete)의 처리(CRUD)
+   * domain/xxx/xxx_schema.py     -> 입출력 관리 파일 - 입력 데이터와 출력 데이터의 스펙 정의 및 검증. 데이터 유효성 검증. 데이터 파싱(형 변환)
+   예) question_router.py - 라우터 파일
+      question_crud.py - 데이터베이터 처리 파일
+      question_schema.py - 입출력 관리 파일
+
+frontend 디렉터리
+   svelte 프레임워크 디렉터리  
+   최종 배포는 frontend/dist 디렉터리에 생성된 빌드 파일을 배포시에 사용    
+   src/App.svelte   -> Svelte 애플리케이션의 기본 진입점 이며, 최상위 구성 요소
+
+
+--------- 코딩 순서
+1. 최초) database.py
+    데이터베이스를 설정
+
+2. 2-02) models.py
+    DB 모델 클래스 정의
+    실질적 DB 스키마라 생각하면 됨
+    모델이라고 부른다.
+
+3. 2-02) alembic
+    alembic revision --autogenerate -m "xxxxxx"
+    -> alembic을 이용하여 신규 revision 생성
+
+    alembic upgrade head
+    -> 신규 revision을 적용
+
+4. 1-07 최초) frontend 디버깅을 위한 CORS허용 코드를 작성
+   main.py에 CORS코드 작성
+   
+
+5. 2-04-1 최초) domain 디렉토리 만들기
+
+6. 2-04-1) domain/xxxx/xxxx_router.py 만들기
+   라우터 파일에 반드시 필요한 것은 APIRouter 클래스로 생성한 router 객체임.
+   router 객체를 생성하여 FastAPI 앱에 등록해야만 라우팅 기능이 동작함.
+   router 객체를 선언한 prefix + router.get("") 이름이 URL임.
+
+7. 2-04-1) main.py에 라우팅 추가
+   # xxxx_router.router => 해당 py 파일에 있는 prefix를 의미함.
+   app.include_router(xxxx_router.router)
+   이후 172.0.0.1:8000/docs# 에서 확인 가능 
+
+8. 2-04-2 최초) get_db() : 의존성 주입, Depends 사용하기
+   database.py에 get_db()함수 선언
+   *. 프로그래밍에서 "Dependency Injection(의존성 주입)"의 뜻은 필요한 기능을 선언하여 사용할 수 있다는 의미
+
+   get_db() 함수 사용
+      question_router.py 에서 사용
+
+   Depends 사용하는 예를 보여줌
+
+9. 2-04-3) domain/xxxx/xxxx_schema.py 만들기    
+   BaseModel을 상속받는 클래스 생성
+   상속받은 클래스를 스키마라 부른다
+
+10. 2-04-3) 라우터에 스키마 연결
+   기존엔 응답 모델이 modeles.py에 선언된 Question모델이었지만,
+   이제부터 응답 모델은 schema.py에 선언된 Question 스키마가 변환된 모델이다. 
+   @router.get("/list", response_model=list[question_schema.Question])
+
+11. 2-04-3) 모델 항목들이 자동으로 스키마로 매핑되도록 수정
+   해당 스키마에 아래 옵션 활성화
+    class Config:
+        orm_mode = True
+
+
+
+--------- Trobule Shooting
+////////////////// 라우터와 스키마 연결을 잘못했을 때
+-> X @router.get("/list", response_model=question_schema.Question)
+-> O @router.get("/list", response_model=list[question_schema.Question])
+
+    content = await serialize_response(
+  File "/home/ygjeon/proj_python/venv/myapi/lib/python3.10/site-packages/fastapi/routing.py", line 141, in serialize_response
+    raise ValidationError(errors, field.type_)
+pydantic.error_wrappers.ValidationError: 2 validation errors for Question
+response -> 0
+  value is not a valid dict (type=type_error.dict)
+response -> 1
+  value is not a valid dict (type=type_error.dict)
+
+
+////////////////// 스키마가 모델에 자동 변환되지 않을 때
+    해당 스키마에 아래 옵션이 빠졌을 때
+    class Config:
+        orm_mode = True
+
+File "/home/ygjeon/proj_python/venv/myapi/lib/python3.10/site-packages/fastapi/routing.py", line 141, in serialize_response
+    raise ValidationError(errors, field.type_)
+pydantic.error_wrappers.ValidationError: 4 validation errors for Question
+response -> id
+  field required (type=value_error.missing)
+response -> subject
+  field required (type=value_error.missing)
+response -> content
+  field required (type=value_error.missing)
+response -> create_date
+  field required (type=value_error.missing)
